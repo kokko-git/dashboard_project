@@ -1,13 +1,9 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
-
-# matplotlibの日本語対応（メイリオを指定）
-plt.rcParams['font.family'] = 'Meiryo'
+import plotly.express as px  # plotlyを追加
 
 # ページタイトル
-st.title("📊 データ可視化ダッシュボード（統計・グラフ表示）")
+st.title("📊 データ可視化ダッシュボード（インタラクティブなグラフ表示）")
 
 # CSVデータ読み込み（キャッシュで効率化）
 @st.cache_data
@@ -38,18 +34,21 @@ with col2:
     st.markdown("**経費(expenses)**")
     st.write(expenses_stats)
 
-# グラフ表示
-st.subheader("📈 売上と経費の推移（折れ線グラフ）")
+# ---------- ここから本日の追加部分（Plotlyグラフ表示） ----------
 
-fig, ax = plt.subplots(figsize=(10, 5))
+# インタラクティブな折れ線グラフの表示
+st.subheader("📈 インタラクティブな売上と経費の推移グラフ")
 
-ax.plot(df["date"], df["sales"], marker="o", linestyle="-", color="blue", label="売上 (sales)")
-ax.plot(df["date"], df["expenses"], marker="x", linestyle="--", color="red", label="経費 (expenses)")
+fig = px.line(
+    df,
+    x="date",
+    y=["sales", "expenses"],
+    labels={"value": "金額", "date": "日付", "variable": "項目"},
+    title="売上と経費の推移"
+)
 
-ax.set_xlabel("日付 (Date)")
-ax.set_ylabel("金額 (Amount)")
-ax.set_title("売上・経費の推移")
-ax.legend()
-ax.grid(True)
+fig.update_layout(
+    hovermode="x unified"
+)
 
-st.pyplot(fig)
+st.plotly_chart(fig, use_container_width=True)
