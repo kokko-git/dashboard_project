@@ -1,18 +1,22 @@
 import streamlit as st
+import pandas as pd
 
-# ページのタイトルを設定
-st.title('はじめてのデータ可視化ダッシュボード')
+# タイトル表示
+st.title("📊 CSVデータの表示")
 
-# シンプルなテキスト表示
-st.write('これは最初のStreamlitアプリです。')
+# CSVデータの読み込み
+@st.cache_data
+def load_data():
+    data = pd.read_csv('data/sample_data.csv')
+    data['date'] = pd.to_datetime(data['date'])
+    return data
 
-# ユーザー入力
-name = st.text_input('名前を入力してください:')
+df = load_data()
 
-# ボタンをクリックしたら表示
-if st.button('挨拶する'):
-    if name:
-        st.success(f'こんにちは、{name}さん！')
-    else:
-        st.warning('名前を入力してください！')
+# データの表示
+st.subheader("元データの表示")
+st.write(df)
 
+# 統計情報の表示
+st.subheader("データの統計情報")
+st.write(df.describe())
