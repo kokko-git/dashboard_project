@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px  # plotlyを追加
+import plotly.express as px
 
-# ページタイトル
-st.title("📊 データ可視化ダッシュボード（インタラクティブなグラフ表示）")
+# タイトル表示
+st.title("📊 インタラクティブなデータ可視化ダッシュボード（UI改善版）")
 
-# CSVデータ読み込み（キャッシュで効率化）
+# CSVデータの読み込み（キャッシュ利用）
 @st.cache_data
 def load_data():
     data = pd.read_csv("data/sample_data.csv")
@@ -14,41 +14,51 @@ def load_data():
 
 df = load_data()
 
-# データ表示
-st.subheader("📋 元データの表示")
-st.write(df)
-
-# 基本統計表示
-st.subheader("📐 基本統計情報")
-
-sales_stats = df["sales"].agg(["mean", "median", "max", "min"])
-expenses_stats = df["expenses"].agg(["mean", "median", "max", "min"])
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.markdown("**売上(sales)**")
-    st.write(sales_stats)
-
-with col2:
-    st.markdown("**経費(expenses)**")
-    st.write(expenses_stats)
-
-# ---------- ここから本日の追加部分（Plotlyグラフ表示） ----------
-
-# インタラクティブな折れ線グラフの表示
-st.subheader("📈 インタラクティブな売上と経費の推移グラフ")
-
-fig = px.line(
-    df,
-    x="date",
-    y=["sales", "expenses"],
-    labels={"value": "金額", "date": "日付", "variable": "項目"},
-    title="売上と経費の推移"
+# 日付範囲指定ウィジェット
+st.sidebar.subheader("📅 日付範囲を指定")
+min_date = df["date"].min()
+max_date = df["date"].max()
+date_range = st.sidebar.date_input(
+    "表示する期間を選択",
+    [min_date, max_date],
+    min_value=min_date,
+    max_value=max_date
 )
 
-fig.update_layout(
-    hovermode="x unified"
+# 項目選択ウィジェット
+st.sidebar.subheader("🔎 表示項目を選択")
+options = st.sidebar.multiselect(
+    "データを選択してください",
+    ["sales", "expenses"],
+    ["sales", "expenses"]
 )
 
-st.plotly_chart(fig, use_container_width=True)
+# データフィルタリング
+start_date, end_date = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
+filtered_df = df[(df["date"] >= start_date) & (df["date"] <= end_date)]
+
+# 元データ表示
+st.subheader("📋 フィルタ済みデータ")
+st.write(filtered_df)
+
+# 統計情報表示（選択項目のみ）
+st.subheader("📐 選択したデータの統計情報")
+
+stats = filtered_df[options].agg(["mean", "median", "max", "min"])
+st.write(stats)
+
+# インタラクティブなグラフ表示（選択項目のみ）
+st.subheader("📈 インタラクティブなグラフ（選択項目）")
+
+if options:
+    fig = px.line(
+        filtered_df,
+        x="date",
+        y=options,
+        labels={"value": "金額", "date": "日付", "variable": "項目"},
+        title="選択した項目の推移"
+    )
+    fig.update_layout(hovermode="x unified")
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.warning("⚠️ 左のメニューで表示項目を選択してください！")
