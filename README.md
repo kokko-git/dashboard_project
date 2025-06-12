@@ -33,5 +33,13 @@ dashboard_project/
 ```bash
 git clone https://github.com/あなたのユーザー名/dashboard_project.git
 cd dashboard_project
-
-
+### ② 仮想環境作成＆有効化
+```bash
+python -m venv venv
+venv\Scripts\activate
+### ③ ライブラリのインストール
+```bash
+pip install -r requirements.txt
+### ④ アプリの実行
+```bash
+streamlit run app.py

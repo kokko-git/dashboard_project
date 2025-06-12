@@ -1,64 +1,38 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+import requests
 
-# タイトル表示
-st.title("📊 インタラクティブなデータ可視化ダッシュボード（UI改善版）")
+# ページタイトル
+st.title("🌐 外部APIからデータを取得・表示")
 
-# CSVデータの読み込み（キャッシュ利用）
+# APIからデータを取得する関数（キャッシュ利用）
 @st.cache_data
-def load_data():
-    data = pd.read_csv("data/sample_data.csv")
-    data["date"] = pd.to_datetime(data["date"])
-    return data
+def fetch_data():
+    url = "https://jsonplaceholder.typicode.com/posts"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        st.error(f"APIからデータ取得に失敗しました。ステータスコード: {response.status_code}")
+        return []
 
-df = load_data()
+# データを取得
+data = fetch_data()
 
-# 日付範囲指定ウィジェット
-st.sidebar.subheader("📅 日付範囲を指定")
-min_date = df["date"].min()
-max_date = df["date"].max()
-date_range = st.sidebar.date_input(
-    "表示する期間を選択",
-    [min_date, max_date],
-    min_value=min_date,
-    max_value=max_date
-)
+# 取得したデータをpandasのDataFrameに変換
+df_api = pd.DataFrame(data)
 
-# 項目選択ウィジェット
-st.sidebar.subheader("🔎 表示項目を選択")
-options = st.sidebar.multiselect(
-    "データを選択してください",
-    ["sales", "expenses"],
-    ["sales", "expenses"]
-)
+# 取得データ表示
+st.subheader("📋 APIから取得したデータ（一部）")
+st.write(df_api.head(10))
 
-# データフィルタリング
-start_date, end_date = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
-filtered_df = df[(df["date"] >= start_date) & (df["date"] <= end_date)]
+# 選択した投稿を詳細表示
+st.subheader("🔍 投稿の詳細表示")
 
-# 元データ表示
-st.subheader("📋 フィルタ済みデータ")
-st.write(filtered_df)
+post_ids = df_api["id"].tolist()
+selected_id = st.selectbox("表示したい投稿のIDを選択", post_ids)
 
-# 統計情報表示（選択項目のみ）
-st.subheader("📐 選択したデータの統計情報")
+selected_post = df_api[df_api["id"] == selected_id].iloc[0]
 
-stats = filtered_df[options].agg(["mean", "median", "max", "min"])
-st.write(stats)
-
-# インタラクティブなグラフ表示（選択項目のみ）
-st.subheader("📈 インタラクティブなグラフ（選択項目）")
-
-if options:
-    fig = px.line(
-        filtered_df,
-        x="date",
-        y=options,
-        labels={"value": "金額", "date": "日付", "variable": "項目"},
-        title="選択した項目の推移"
-    )
-    fig.update_layout(hovermode="x unified")
-    st.plotly_chart(fig, use_container_width=True)
-else:
-    st.warning("⚠️ 左のメニューで表示項目を選択してください！")
+st.write(f"### {selected_post['title']}")
+st.write(selected_post["body"])
